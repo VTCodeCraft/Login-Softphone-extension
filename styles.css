@@ -1,0 +1,289 @@
+/**
+ * Professional Click-to-Call Softphone Extension Styles
+ */
+
+/* Floating Action Button */
+.softphone-floating-button {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  transition: transform 0.2s ease-out;
+  cursor: grab;
+  z-index: 999999;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #1aa34a 0%, #0ecf6f 100%);
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25), inset 0 -2px 6px rgba(255, 255, 255, 0.15);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 22px;
+  font-weight: 600;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  backdrop-filter: blur(4px);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.softphone-floating-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(135deg, #4ba254 0%, #66ea6f 100%);
+}
+
+.softphone-floating-button:active {
+  cursor: grabbing;
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Widget Container */
+.softphone-widget-container {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 380px;
+  height: 580px;
+  z-index: 999998;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.softphone-widget-container.minimized {
+  height: 48px;
+}
+
+.softphone-widget-container.minimized .softphone-frame {
+  display: none;
+}
+
+/* Widget Header */
+.softphone-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  cursor: move;
+  user-select: none;
+  height: 24px;
+}
+
+.softphone-title {
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.5px;
+}
+
+.softphone-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.softphone-controls button {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: bold;
+  transition: background-color 0.2s;
+}
+
+.softphone-controls button:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.softphone-controls button:active {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+/* Softphone iframe */
+.softphone-frame {
+  width: 100%;
+  height: calc(100% - 48px);
+  border: none;
+  background: #f8f9fa;
+  display: block;
+}
+
+/* Highlighted Phone Numbers */
+/* .softphone-highlighted-number {
+  background: linear-gradient(135deg, #667eea20, #764ba220);
+  color: #4f46e5;
+  padding: 2px 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  font-weight: 500;
+} */
+
+.softphone-highlighted-number:hover {
+  background: linear-gradient(135deg, #667eea30, #764ba230);
+  text-decoration-color: #4f46e5;
+  transform: translateY(-1px);
+}
+
+/* Notifications */
+.softphone-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000000;
+  padding: 12px 16px;
+  border-radius: 8px;
+  color: white;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  max-width: 300px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  animation: slideInRight 0.3s ease-out;
+}
+
+.softphone-notification.success {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.softphone-notification.error {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.softphone-notification.info {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .softphone-widget-container {
+    width: 320px;
+    height: 500px;
+    bottom: 20px;
+    right: 20px;
+  }
+
+  .softphone-floating-button {
+    width: 48px;
+    height: 48px;
+    bottom: 20px;
+    right: 20px;
+  }
+
+  .softphone-notification {
+    right: 10px;
+    left: 10px;
+    max-width: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .softphone-widget-container {
+    width: calc(100vw - 20px);
+    height: 400px;
+    bottom: 10px;
+    right: 10px;
+    left: 10px;
+  }
+}
+
+/* Accessibility */
+/* .softphone-floating-button:focus,
+.softphone-controls button:focus {
+  outline: 2px solid #46e54b;
+  outline-offset: 2px;
+}
+
+.softphone-highlighted-number:focus {
+  outline: 2px solid #46e559;
+  outline-offset: 1px;
+} */
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .softphone-widget-container {
+    background: #1f2937;
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #f9fafb;
+  }
+
+  .softphone-frame {
+    background: #111827;
+  }
+
+  /* .softphone-highlighted-number {
+    background: linear-gradient(135deg, #667eea30, #764ba230);
+    color: #95f881;
+  } */
+
+  .softphone-highlighted-number:hover {
+    background: linear-gradient(135deg, #667eea40, #764ba240);
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .softphone-floating-button {
+    background: #000000;
+    border: 2px solid #ffffff;
+  }
+
+  .softphone-widget-container {
+    border: 2px solid #000000;
+  }
+
+  .softphone-highlighted-number {
+    background: #ffff00;
+    color: #000000;
+    border: 1px solid #000000;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+
+  .softphone-floating-button,
+  .softphone-widget-container,
+  .softphone-highlighted-number,
+  .softphone-notification {
+    transition: none;
+    animation: none;
+  }
+
+  .softphone-floating-button:hover {
+    transform: none;
+  }
+
+  .softphone-highlighted-number:hover {
+    transform: none;
+  }
+}
