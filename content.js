@@ -750,6 +750,7 @@ window.addEventListener("message", (event) => {
   if (event.origin !== "https://login-softphone.vercel.app") return;
 
   if (event.data.type === "SOFTPHONE_SAVE_CREDENTIALS") {
+    console.log("🔐 Saving softphone credentials", event.data);
     chrome.storage.local.set({
       softphoneCredentials: event.data.credentials
     }, () => {
