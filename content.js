@@ -2,7 +2,8 @@ class SoftphoneManager {
   constructor() {
     this.isEnabled = true;
     this.callHistory = [];
-    this.phoneRegex = /\+?\d{1,4}[\s\-\.]?\(?\d{1,4}\)?[\s\-\.]?\d{1,4}[\s\-\.]?\d{1,9}/g;
+    // this.phoneRegex = /\+?\d{1,4}[\s\-\.]?\(?\d{1,4}\)?[\s\-\.]?\d{1,4}[\s\-\.]?\d{1,9}/g;
+    this.phoneRegex = /(?:\+91[\s\-]?)?[6-9]\d{9}/g;
     this.widget = null;
     this.settings = {
       autoDetect: true,
@@ -743,32 +744,3 @@ if (document.readyState === 'loading') {
 } else {
   new SoftphoneManager();
 }
-
-
-window.addEventListener("message", (event) => {
-  if (event.origin !== "https://login-softphone.vercel.app") return;
-
-  if (event.data.type === "SOFTPHONE_SAVE_CREDENTIALS") {
-    chrome.storage.local.set({
-      softphoneCredentials: event.data.credentials
-    }, () => {
-      console.log("🔐 Softphone credentials saved to extension storage");
-    });
-  }
-});
-
-chrome.storage.local.get(["softphoneCredentials"], (result) => {
-  if (result.softphoneCredentials) {
-    const creds = result.softphoneCredentials;
-    console.log("🪪 Reusing stored credentials", creds);
-
-    // Optional: auto-login in iframe
-    const iframe = document.getElementById("softphone-widget");
-    if (iframe && iframe.contentWindow) {
-      iframe.contentWindow.postMessage({
-        type: "SOFTPHONE_AUTOLOGIN",
-        credentials: creds
-      }, "https://login-softphone.vercel.app");
-    }
-  }
-});
