@@ -2,7 +2,8 @@ class SoftphoneManager {
   constructor() {
     this.isEnabled = true;
     this.callHistory = [];
-    this.phoneRegex = /\+?\d{1,4}[\s\-\.]?\(?\d{1,4}\)?[\s\-\.]?\d{1,4}[\s\-\.]?\d{1,9}/g;
+    // this.phoneRegex = /\+?\d{1,4}[\s\-\.]?\(?\d{1,4}\)?[\s\-\.]?\d{1,4}[\s\-\.]?\d{1,9}/g;
+    this.phoneRegex = /(?:\+91[\s\-]?)?[6-9]\d{9}/g;
     this.widget = null;
     this.settings = {
       autoDetect: true,
@@ -743,3 +744,18 @@ if (document.readyState === 'loading') {
 } else {
   new SoftphoneManager();
 }
+
+
+
+
+window.addEventListener('message', (event) => {
+  if (event.origin !== 'https://login-softphone.vercel.app') return; // prevent unwanted access
+
+  const { type, userData } = event.data;
+
+  if (type === 'SOFTPHONE_LOGIN' && userData) {
+    chrome.storage.local.set({ softphoneUser: userData }, () => {
+      console.log('✅ User login data saved in extension storage');
+    });
+  }
+});
