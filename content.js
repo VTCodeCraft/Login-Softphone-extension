@@ -2,9 +2,9 @@ class SoftphoneManager {
   constructor() {
     this.isEnabled = true;
     this.callHistory = [];
-    // this.phoneRegex = /\+?\d{1,4}[\s\-\.]?\(?\d{1,4}\)?[\s\-\.]?\d{1,4}[\s\-\.]?\d{1,9}/g;
     this.phoneRegex = /(?:\+91[\s\-]?)?[6-9]\d{9}/g;
     this.widget = null;
+    this.isWidgetVisible = false; // Track visibility state
     this.settings = {
       autoDetect: true,
       showFloatingButton: true,
@@ -22,9 +22,10 @@ class SoftphoneManager {
     this.boundHandleKeyboard = this.handleKeyboard.bind(this);
 
     this.init();
+    this.outsideClickHandlerBound = null;
   }
 
-  // Optimization: Add throttle utility
+  // ... keep all existing utility methods (throttle, debounce, etc.)
   throttle(func, delay) {
     let timeoutId;
     let lastExecTime = 0;
@@ -44,7 +45,6 @@ class SoftphoneManager {
     };
   }
 
-  // Optimization: Add debounce utility
   debounce(func, delay) {
     let timeoutId;
     return function (...args) {
@@ -60,7 +60,11 @@ class SoftphoneManager {
       if (this.isEnabled) {
         this.createFloatingButton();
         this.setupEventListeners();
-        // Optimization: Use requestIdleCallback for non-critical tasks
+        
+        // Initialize widget in background (hidden)
+        await this.initializeWidget();
+        
+        // Schedule highlighting
         this.scheduleHighlighting();
       }
     } catch (error) {
@@ -68,7 +72,65 @@ class SoftphoneManager {
     }
   }
 
-  // Optimization: Schedule highlighting during idle time
+  // NEW METHOD: Initialize widget in background
+  async initializeWidget() {
+    try {
+      console.log('🚀 Initializing softphone widget in background...');
+      
+      const widgetContainer = document.createElement('div');
+      widgetContainer.id = 'softphone-widget-container';
+      widgetContainer.className = 'softphone-widget-container';
+
+      // Position the widget but keep it hidden
+      const position = this.calculateWidgetPosition();
+      Object.keys(position).forEach(key => {
+        widgetContainer.style[key] = position[key];
+      });
+      
+      // Initially hidden
+      widgetContainer.style.display = 'none';
+
+      const iframe = document.createElement('iframe');
+      iframe.id = 'softphone-widget';
+      iframe.className = 'softphone-frame';
+      iframe.src = 'https://login-softphone.vercel.app/';
+      iframe.allow = 'microphone';
+      iframe.title = 'Softphone Widget';
+
+      // Handle iframe load - auto-login if credentials exist
+      iframe.onload = () => {
+        console.log('📱 Softphone widget loaded successfully');
+        
+        chrome.storage.local.get(["softphoneCredentials"], (result) => {
+          if (result.softphoneCredentials) {
+            console.log('🔐 Auto-logging in with stored credentials');
+            iframe.contentWindow.postMessage({
+              type: "SOFTPHONE_AUTOLOGIN",
+              credentials: result.softphoneCredentials
+            }, "https://login-softphone.vercel.app");
+          }
+        });
+      };
+
+      const header = document.createElement('div');
+      header.className = 'softphone-header';
+      this.makeDraggable(widgetContainer, header);
+
+      widgetContainer.appendChild(header);
+      widgetContainer.appendChild(iframe);
+
+      document.body.appendChild(widgetContainer);
+      this.widget = widgetContainer;
+      this.domCache.set('widget', widgetContainer);
+
+      console.log('✅ Softphone widget initialized and ready');
+      
+    } catch (error) {
+      console.error('❌ Error initializing softphone widget:', error);
+    }
+  }
+
+  // ... keep all existing methods unchanged until createFloatingButton
   scheduleHighlighting() {
     if (window.requestIdleCallback) {
       window.requestIdleCallback(() => {
@@ -113,12 +175,9 @@ class SoftphoneManager {
   `;
     button.title = 'Toggle Softphone';
 
+    // MODIFIED: Just toggle visibility instead of creating widget
     button.addEventListener('click', () => {
-      if (this.isWidgetOpen()) {
-        this.closeWidget();
-      } else {
-        this.openWidget();
-      }
+      this.toggleWidget();
     });
 
     document.body.appendChild(button);
@@ -126,23 +185,124 @@ class SoftphoneManager {
     this.makeButtonDraggable(button);
   }
 
-  isWidgetOpen() {
-    return this.domCache.has('widget') && this.domCache.get('widget').parentNode;
+  // NEW METHOD: Toggle widget visibility
+  toggleWidget() {
+    if (this.widget) {
+      if (this.isWidgetVisible) {
+        this.hideWidget();
+      } else {
+        this.showWidget();
+      }
+    }
   }
 
+  // NEW METHOD: Show widget
+  showWidget(phoneNumber = '') {
+    if (!this.widget) {
+      console.error('Widget not initialized');
+      return;
+    }
+
+    const position = this.calculateWidgetPosition();
+    Object.keys(position).forEach(key => {
+      this.widget.style[key] = position[key];
+    });
+
+    this.widget.style.display = 'block';
+    this.isWidgetVisible = true;
+
+    // Set up outside click handler
+    if (!this.outsideClickHandlerBound) {
+      this.outsideClickHandlerBound = this.handleOutsideClick.bind(this);
+      setTimeout(() => {
+        document.addEventListener('click', this.outsideClickHandlerBound);
+      }, 0);
+    }
+
+    // If phone number provided, initiate call
+    if (phoneNumber) {
+      const iframe = this.widget.querySelector('iframe');
+      if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.postMessage(
+          { type: 'SOFTPHONE_CALL', number: phoneNumber },
+          'https://login-softphone.vercel.app'
+        );
+      }
+      this.showNotification(`Calling ${phoneNumber}...`, 'success');
+    }
+
+    console.log('👁️ Softphone widget shown');
+  }
+
+  // NEW METHOD: Hide widget
+  hideWidget() {
+    if (this.widget) {
+      this.widget.style.display = 'none';
+      this.isWidgetVisible = false;
+    }
+
+    if (this.outsideClickHandlerBound) {
+      document.removeEventListener('click', this.outsideClickHandlerBound);
+      this.outsideClickHandlerBound = null;
+    }
+
+    console.log('👁️ Softphone widget hidden');
+  }
+
+  // MODIFIED: Check if widget is visible
+  isWidgetOpen() {
+    return this.isWidgetVisible && this.widget && this.widget.style.display !== 'none';
+  }
+
+  // ... keep all existing methods until openWidget
+
+  // MODIFIED: openWidget now just shows the existing widget
+  openWidget(phoneNumber = '') {
+    this.showWidget(phoneNumber);
+  }
+
+  // MODIFIED: closeWidget now just hides the widget
+  closeWidget() {
+    this.hideWidget();
+  }
+
+  // MODIFIED: Handle outside clicks
+  handleOutsideClick(event) {
+    const widget = this.widget;
+    const button = this.domCache.get('floatingButton');
+
+    if (!widget || !this.isWidgetVisible) return;
+
+    const isClickInsideWidget = widget.contains(event.target);
+    const isClickOnButton = button && button.contains(event.target);
+
+    if (!isClickInsideWidget && !isClickOnButton) {
+      this.hideWidget();
+    }
+  }
+
+  // MODIFIED: initiateCall now shows widget if hidden
+  initiateCall(phoneNumber) {
+    if (!phoneNumber) return;
+
+    const cleanNumber = this.cleanPhoneNumber(phoneNumber);
+    if (!this.isValidPhoneNumber(cleanNumber)) {
+      this.showNotification('Invalid phone number format', 'error');
+      return;
+    }
+
+    this.addToCallHistory(cleanNumber);
+    this.showWidget(cleanNumber);
+  }
+
+  // ... keep all other existing methods unchanged
   setupEventListeners() {
-    // Optimization: Use event delegation for better performance
     document.addEventListener('click', this.boundHandleClick, true);
     document.addEventListener('keydown', this.boundHandleKeyboard);
-
-    // Optimization: Intercept existing tel links immediately
     this.interceptAllTelLinks();
-
-    // Optimization: Use more efficient mutation observer
     this.setupMutationObserver();
   }
 
-  // Optimization: More efficient mutation observer
   setupMutationObserver() {
     const observer = new MutationObserver((mutations) => {
       let hasNewNodes = false;
@@ -168,7 +328,6 @@ class SoftphoneManager {
     observer.observe(document.body, {
       childList: true,
       subtree: true,
-      // Optimization: Only observe what we need
       attributes: false,
       characterData: false
     });
@@ -176,7 +335,6 @@ class SoftphoneManager {
     this.mutationObserver = observer;
   }
 
-  // Optimization: More efficient tel link interception
   interceptAllTelLinks() {
     const telLinks = document.querySelectorAll('a[href^="tel:"]:not([data-softphone-processed])');
 
@@ -186,7 +344,6 @@ class SoftphoneManager {
       link.setAttribute('data-softphone-processed', 'true');
       this.processedElements.add(link);
 
-      // Optimization: Use passive event listener
       link.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -200,21 +357,17 @@ class SoftphoneManager {
     });
   }
 
-  // Optimization: Process only new tel links
   interceptNewTelLinks() {
     this.interceptAllTelLinks();
   }
 
-  // Optimization: Improved click handler with early returns
   handleClick(e) {
     const target = e.target;
 
-    // Optimization: Early return for non-relevant clicks
     if (!target || target.closest('.softphone-widget-container')) {
       return;
     }
 
-    // Handle tel links (fallback for dynamically added links)
     if (target.tagName === 'A' && target.href && target.href.startsWith('tel:')) {
       e.preventDefault();
       e.stopPropagation();
@@ -225,7 +378,6 @@ class SoftphoneManager {
       return;
     }
 
-    // Handle highlighted numbers
     if (target.classList && target.classList.contains('softphone-highlighted-number')) {
       e.preventDefault();
       e.stopPropagation();
@@ -236,14 +388,12 @@ class SoftphoneManager {
       return;
     }
 
-    // Optimization: Skip auto-detect if not enabled or no text content
     if (!this.settings.autoDetect || !target.textContent) {
       return;
     }
 
-    // Auto-detect phone numbers (more restrictive)
     const text = target.textContent.trim();
-    if (text.length > 50) return; // Skip very long text for performance
+    if (text.length > 50) return;
 
     const matches = text.match(this.phoneRegex);
     if (matches && matches.length === 1 && this.isValidPhoneNumber(matches[0])) {
@@ -254,160 +404,19 @@ class SoftphoneManager {
   }
 
   handleKeyboard(e) {
-    // Ctrl+Shift+P to open softphone
     if (e.ctrlKey && e.shiftKey && e.key === 'P') {
       e.preventDefault();
-      this.openWidget();
+      this.showWidget();
     }
 
-    // Escape to close widget
-    if (e.key === 'Escape' && this.widget) {
-      this.closeWidget();
-    }
-  }
-
-  handleMessage(request, sender, sendResponse) {
-    switch (request.action) {
-      case 'toggleExtension':
-        this.toggleExtension();
-        sendResponse({ success: true });
-        break;
-      case 'openWidget':
-        this.openWidget(request.number);
-        sendResponse({ success: true });
-        break;
-      case 'getCallHistory':
-        sendResponse({ callHistory: this.callHistory });
-        break;
-      case 'clearCallHistory':
-        this.clearCallHistory();
-        sendResponse({ success: true });
-        break;
-      case 'updateSettings':
-        this.updateSettings(request.settings);
-        sendResponse({ success: true });
-        break;
-      default:
-        sendResponse({ error: 'Unknown action' });
+    if (e.key === 'Escape' && this.isWidgetVisible) {
+      this.hideWidget();
     }
   }
 
-  // Optimization: Much more efficient phone number highlighting
-  highlightPhoneNumbers() {
-    if (!this.settings.highlightNumbers) return;
-
-    // Use document fragment for better performance
-    const fragment = document.createDocumentFragment();
-
-    // Optimization: Process only new text nodes
-    const walker = document.createTreeWalker(
-      document.body,
-      NodeFilter.SHOW_TEXT,
-      {
-        acceptNode: (node) => {
-          const parent = node.parentElement;
-
-          // Skip if already processed
-          if (this.processedElements.has(parent)) {
-            return NodeFilter.FILTER_REJECT;
-          }
-
-          // Skip script, style, and other non-content elements
-          if (parent && ['SCRIPT', 'STYLE', 'NOSCRIPT', 'IFRAME', 'OBJECT'].includes(parent.tagName)) {
-            return NodeFilter.FILTER_REJECT;
-          }
-
-          // Skip if parent has softphone classes
-          if (parent && parent.classList &&
-            (parent.classList.contains('softphone-highlighted-number') ||
-              parent.classList.contains('softphone-widget-container'))) {
-            return NodeFilter.FILTER_REJECT;
-          }
-
-          return NodeFilter.FILTER_ACCEPT;
-        }
-      }
-    );
-
-    const textNodes = [];
-    let node;
-    while (node = walker.nextNode()) {
-      textNodes.push(node);
-    }
-
-    // Optimization: Use requestAnimationFrame for non-blocking processing
-    const processChunk = (startIndex) => {
-      const endIndex = Math.min(startIndex + 10, textNodes.length);
-
-      for (let i = startIndex; i < endIndex; i++) {
-        const textNode = textNodes[i];
-        const text = textNode.textContent;
-
-        // Skip very long text for performance
-        if (text.length > 200) continue;
-
-        const matches = [...text.matchAll(this.phoneRegex)];
-
-        if (matches.length > 0) {
-          const parent = textNode.parentElement;
-          if (!parent) continue;
-
-          let newHTML = text;
-
-          // Replace matches with highlighted spans (in reverse order)
-          matches.reverse().forEach(match => {
-            const phoneNumber = match[0];
-            const highlightedSpan = `<span class="softphone-highlighted-number" title="Click to call ${phoneNumber}">${phoneNumber}</span>`;
-            newHTML = newHTML.substring(0, match.index) + highlightedSpan + newHTML.substring(match.index + phoneNumber.length);
-          });
-
-          if (newHTML !== text) {
-            parent.innerHTML = parent.innerHTML.replace(text, newHTML);
-            this.processedElements.add(parent);
-          }
-        }
-      }
-
-      // Process next chunk
-      if (endIndex < textNodes.length) {
-        if (window.requestAnimationFrame) {
-          requestAnimationFrame(() => processChunk(endIndex));
-        } else {
-          setTimeout(() => processChunk(endIndex), 0);
-        }
-      }
-    };
-
-    if (textNodes.length > 0) {
-      processChunk(0);
-    }
-  }
-
-  initiateCall(phoneNumber) {
-    if (!phoneNumber) return;
-
-    const cleanNumber = this.cleanPhoneNumber(phoneNumber);
-    if (!this.isValidPhoneNumber(cleanNumber)) {
-      this.showNotification('Invalid phone number format', 'error');
-      return;
-    }
-
-    this.addToCallHistory(cleanNumber);
-    this.openWidget(cleanNumber);
-  }
-
-  closeWidget() {
-    if (this.widget) {
-      this.widget.remove();
-      this.widget = null;
-      this.domCache.delete('widget');
-    }
-  }
-
-  // Optimization: Cache position calculations
+  // ... keep all remaining methods unchanged
   calculateWidgetPosition() {
     const button = this.domCache.get('floatingButton');
-
     const widgetWidth = 380;
     const widgetHeight = 580;
     const spacing = 10;
@@ -415,10 +424,8 @@ class SoftphoneManager {
 
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
-
     const availableWidth = viewportWidth - (2 * margin);
     const availableHeight = viewportHeight - (2 * margin);
-
     const actualWidgetWidth = Math.min(widgetWidth, availableWidth);
     const actualWidgetHeight = Math.min(widgetHeight, availableHeight);
 
@@ -431,8 +438,6 @@ class SoftphoneManager {
     }
 
     const buttonRect = button.getBoundingClientRect();
-
-    // Calculate horizontal position
     let leftPos;
     if (buttonRect.left - actualWidgetWidth - spacing >= margin) {
       leftPos = buttonRect.left - actualWidgetWidth - spacing;
@@ -444,7 +449,6 @@ class SoftphoneManager {
 
     leftPos = Math.max(margin, Math.min(leftPos, viewportWidth - actualWidgetWidth - margin));
 
-    // Calculate vertical position
     let topPos;
     if (buttonRect.top - actualWidgetHeight - spacing >= margin) {
       topPos = buttonRect.top - actualWidgetHeight - spacing;
@@ -469,60 +473,6 @@ class SoftphoneManager {
     return position;
   }
 
-  openWidget(phoneNumber = '') {
-    if (this.widget) {
-      this.closeWidget();
-      return;
-    }
-
-    try {
-      const widgetContainer = document.createElement('div');
-      widgetContainer.id = 'softphone-widget-container';
-      widgetContainer.className = 'softphone-widget-container';
-
-      const position = this.calculateWidgetPosition();
-
-      Object.keys(position).forEach(key => {
-        widgetContainer.style[key] = position[key];
-      });
-
-      const iframe = document.createElement('iframe');
-      iframe.id = 'softphone-widget';
-      iframe.className = 'softphone-frame';
-      iframe.src = 'https://login-softphone.vercel.app/';
-
-      iframe.onload = () => {
-        if (phoneNumber) {
-          iframe.contentWindow.postMessage(
-            { type: 'SOFTPHONE_CALL', number: phoneNumber },
-            'https://login-softphone.vercel.app'
-          );
-        }
-      };
-      iframe.allow = 'microphone';
-      iframe.title = 'Softphone Widget';
-
-      const header = document.createElement('div');
-      this.makeDraggable(widgetContainer, header);
-
-      widgetContainer.appendChild(header);
-      widgetContainer.appendChild(iframe);
-
-      document.body.appendChild(widgetContainer);
-      this.widget = widgetContainer;
-      this.domCache.set('widget', widgetContainer);
-
-      if (phoneNumber) {
-        this.showNotification(`Calling ${phoneNumber}...`, 'success');
-      }
-
-    } catch (error) {
-      console.error('Error opening softphone widget:', error);
-      this.showNotification('Failed to open softphone', 'error');
-    }
-  }
-
-  // Optimization: Improved dragging with RAF
   makeDraggable(element, handle) {
     let isDragging = false;
     let currentX, currentY, initialX, initialY;
@@ -533,7 +483,6 @@ class SoftphoneManager {
 
       const margin = 10;
       const elementRect = element.getBoundingClientRect();
-
       const minX = margin;
       const maxX = window.innerWidth - elementRect.width - margin;
       const minY = margin;
@@ -571,7 +520,6 @@ class SoftphoneManager {
     });
   }
 
-  // Optimization: Improved button dragging
   makeButtonDraggable(button) {
     let isDragging = false;
     let offsetX = 0;
@@ -584,7 +532,6 @@ class SoftphoneManager {
       const margin = 10;
       const buttonWidth = button.offsetWidth;
       const buttonHeight = button.offsetHeight;
-
       const minX = margin;
       const maxX = window.innerWidth - buttonWidth - margin;
       const minY = margin;
@@ -619,10 +566,18 @@ class SoftphoneManager {
         isDragging = false;
         button.style.transition = 'left 0.2s ease, top 0.2s ease';
         if (rafId) cancelAnimationFrame(rafId);
+
+        if (this.widget && this.isWidgetVisible) {
+          const position = this.calculateWidgetPosition();
+          Object.keys(position).forEach(key => {
+            this.widget.style[key] = position[key];
+          });
+        }
       }
     });
   }
 
+  // ... keep all remaining utility methods
   cleanPhoneNumber(phoneNumber) {
     return phoneNumber.replace(/[^\d+]/g, '');
   }
@@ -658,12 +613,8 @@ class SoftphoneManager {
     const notification = document.createElement('div');
     notification.className = `softphone-notification ${type}`;
     notification.textContent = message;
-
     document.body.appendChild(notification);
-
-    setTimeout(() => {
-      notification.remove();
-    }, 3000);
+    setTimeout(() => notification.remove(), 3000);
   }
 
   toggleExtension() {
@@ -678,7 +629,7 @@ class SoftphoneManager {
         floatingBtn.remove();
         this.domCache.delete('floatingButton');
       }
-      this.closeWidget();
+      this.hideWidget();
       this.removeHighlights();
     }
   }
@@ -714,7 +665,111 @@ class SoftphoneManager {
     }
   }
 
-  // Optimization: Cleanup method
+  highlightPhoneNumbers() {
+    if (!this.settings.highlightNumbers) return;
+
+    const walker = document.createTreeWalker(
+      document.body,
+      NodeFilter.SHOW_TEXT,
+      {
+        acceptNode: (node) => {
+          const parent = node.parentElement;
+
+          if (this.processedElements.has(parent)) {
+            return NodeFilter.FILTER_REJECT;
+          }
+
+          if (parent && ['SCRIPT', 'STYLE', 'NOSCRIPT', 'IFRAME', 'OBJECT'].includes(parent.tagName)) {
+            return NodeFilter.FILTER_REJECT;
+          }
+
+          if (parent && parent.classList &&
+            (parent.classList.contains('softphone-highlighted-number') ||
+              parent.classList.contains('softphone-widget-container'))) {
+            return NodeFilter.FILTER_REJECT;
+          }
+
+          return NodeFilter.FILTER_ACCEPT;
+        }
+      }
+    );
+
+    const textNodes = [];
+    let node;
+    while (node = walker.nextNode()) {
+      textNodes.push(node);
+    }
+
+    const processChunk = (startIndex) => {
+      const endIndex = Math.min(startIndex + 10, textNodes.length);
+
+      for (let i = startIndex; i < endIndex; i++) {
+        const textNode = textNodes[i];
+        const text = textNode.textContent;
+
+        if (text.length > 200) continue;
+
+        const matches = [...text.matchAll(this.phoneRegex)];
+
+        if (matches.length > 0) {
+          const parent = textNode.parentElement;
+          if (!parent) continue;
+
+          let newHTML = text;
+
+          matches.reverse().forEach(match => {
+            const phoneNumber = match[0];
+            const highlightedSpan = `<span class="softphone-highlighted-number" title="Click to call ${phoneNumber}">${phoneNumber}</span>`;
+            newHTML = newHTML.substring(0, match.index) + highlightedSpan + newHTML.substring(match.index + phoneNumber.length);
+          });
+
+          if (newHTML !== text) {
+            parent.innerHTML = parent.innerHTML.replace(text, newHTML);
+            this.processedElements.add(parent);
+          }
+        }
+      }
+
+      if (endIndex < textNodes.length) {
+        if (window.requestAnimationFrame) {
+          requestAnimationFrame(() => processChunk(endIndex));
+        } else {
+          setTimeout(() => processChunk(endIndex), 0);
+        }
+      }
+    };
+
+    if (textNodes.length > 0) {
+      processChunk(0);
+    }
+  }
+
+  handleMessage(request, sender, sendResponse) {
+    switch (request.action) {
+      case 'toggleExtension':
+        this.toggleExtension();
+        sendResponse({ success: true });
+        break;
+      case 'openWidget':
+        this.showWidget(request.number);
+        sendResponse({ success: true });
+        break;
+      case 'getCallHistory':
+        sendResponse({ callHistory: this.callHistory });
+        break;
+      case 'clearCallHistory':
+        this.clearCallHistory();
+        sendResponse({ success: true });
+        break;
+      case 'updateSettings':
+        this.updateSettings(request.settings);
+        sendResponse({ success: true });
+        break;
+      default:
+        sendResponse({ error: 'Unknown action' });
+    }
+  }
+
   destroy() {
     if (this.mutationObserver) {
       this.mutationObserver.disconnect();
@@ -723,7 +778,7 @@ class SoftphoneManager {
     document.removeEventListener('click', this.boundHandleClick, true);
     document.removeEventListener('keydown', this.boundHandleKeyboard);
 
-    this.closeWidget();
+    this.hideWidget();
     this.removeHighlights();
 
     const floatingBtn = this.domCache.get('floatingButton');
@@ -736,16 +791,7 @@ class SoftphoneManager {
   }
 }
 
-// Initialize the softphone manager when DOM is ready
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    new SoftphoneManager();
-  });
-} else {
-  new SoftphoneManager();
-}
-
-
+// Keep the existing message listeners and initialization code
 window.addEventListener("message", (event) => {
   if (event.origin !== "https://login-softphone.vercel.app") return;
 
@@ -757,20 +803,28 @@ window.addEventListener("message", (event) => {
       console.log("🔐 Softphone credentials saved to extension storage");
     });
   }
-});
 
-chrome.storage.local.get(["softphoneCredentials"], (result) => {
-  if (result.softphoneCredentials) {
-    const creds = result.softphoneCredentials;
-    console.log("🪪 Reusing stored credentials", creds);
+  if (event.data.type === "SOFTPHONE_INCOMING_CALL") {
+    const callFrom = event.data.data?.from || "Unknown";
+    console.log("📞 Incoming call detected from:", callFrom);
 
-    // Optional: auto-login in iframe
-    const iframe = document.getElementById("softphone-widget");
-    if (iframe && iframe.contentWindow) {
-      iframe.contentWindow.postMessage({
-        type: "SOFTPHONE_AUTOLOGIN",
-        credentials: creds
-      }, "https://login-softphone.vercel.app");
+    if (window.softphoneManagerInstance && !window.softphoneManagerInstance.isWidgetOpen()) {
+      window.softphoneManagerInstance.showWidget();
     }
+
+    const notif = document.createElement("div");
+    notif.className = "softphone-notification info";
+    notif.textContent = `📞 Incoming call from ${callFrom}`;
+    document.body.appendChild(notif);
+    setTimeout(() => notif.remove(), 5000);
   }
 });
+
+// Initialize the softphone manager when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    window.softphoneManagerInstance = new SoftphoneManager();
+  });
+} else {
+  window.softphoneManagerInstance = new SoftphoneManager();
+}
