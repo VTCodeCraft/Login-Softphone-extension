@@ -60,10 +60,10 @@ class SoftphoneManager {
       if (this.isEnabled) {
         this.createFloatingButton();
         this.setupEventListeners();
-        
+
         // Initialize widget in background (hidden)
         await this.initializeWidget();
-        
+
         // Schedule highlighting
         this.scheduleHighlighting();
       }
@@ -76,7 +76,7 @@ class SoftphoneManager {
   async initializeWidget() {
     try {
       console.log('🚀 Initializing softphone widget in background...');
-      
+
       const widgetContainer = document.createElement('div');
       widgetContainer.id = 'softphone-widget-container';
       widgetContainer.className = 'softphone-widget-container';
@@ -86,7 +86,7 @@ class SoftphoneManager {
       Object.keys(position).forEach(key => {
         widgetContainer.style[key] = position[key];
       });
-      
+
       // Initially hidden
       widgetContainer.style.display = 'none';
 
@@ -100,7 +100,7 @@ class SoftphoneManager {
       // Handle iframe load - auto-login if credentials exist
       iframe.onload = () => {
         console.log('📱 Softphone widget loaded successfully');
-        
+
         chrome.storage.local.get(["softphoneCredentials"], (result) => {
           if (result.softphoneCredentials) {
             console.log('🔐 Auto-logging in with stored credentials');
@@ -124,7 +124,7 @@ class SoftphoneManager {
       this.domCache.set('widget', widgetContainer);
 
       console.log('✅ Softphone widget initialized and ready');
-      
+
     } catch (error) {
       console.error('❌ Error initializing softphone widget:', error);
     }
@@ -791,34 +791,192 @@ class SoftphoneManager {
   }
 }
 
+
 // Keep the existing message listeners and initialization code
+// window.addEventListener("message", (event) => {
+//   if (event.origin !== "https://login-softphone.vercel.app") return;
+//   if (event.data.type === "SOFTPHONE_INCOMING_CALL") {
+//     const callFrom = event.data.data?.from || "Unknown";
+//     console.log("📞 Incoming call detected from:", callFrom);
+
+//     if (window.softphoneManagerInstance && !window.softphoneManagerInstance.isWidgetOpen()) {
+//       window.softphoneManagerInstance.showWidget();
+//     }
+
+//     const notif = document.createElement("div");
+//     notif.className = "softphone-notification info";
+//     notif.textContent = `📞 Incoming call from ${callFrom}`;
+//     document.body.appendChild(notif);
+//     setTimeout(() => notif.remove(), 5000);
+//   }
+// });
+
+// window.addEventListener("message", (event) => {
+//   if (event.origin !== "https://login-softphone.vercel.app") return;
+
+//   if (event.data.type === "SOFTPHONE_SAVE_CREDENTIALS") {
+//     chrome.storage.local.set({
+//       softphoneCredentials: event.data.credentials
+//     }, () => {
+//       console.log("📦 Credentials synced to Chrome storage");
+//     });
+//   }
+// });
+
+
+// window.addEventListener("message", (event) => {
+//   if (event.origin !== "https://login-softphone.vercel.app") return;
+
+//   if (event.data.type === "SOFTPHONE_REQUEST_CREDENTIALS") {
+//     chrome.storage.local.get(["softphoneCredentials"], (result) => {
+//       event.source.postMessage({
+//         type: "SOFTPHONE_RESPONSE_CREDENTIALS",
+//         credentials: result.softphoneCredentials || null
+//       }, event.origin);
+//     });
+//   }
+// });
+
+// window.addEventListener("message", (event) => {
+//   // ✅ Only allow messages from the trusted softphone app
+//   if (event.origin !== "https://login-softphone.vercel.app") return;
+
+//   const data = event.data;
+
+//   // 📞 Incoming call handler
+//   if (data.type === "SOFTPHONE_INCOMING_CALL") {
+//     const callFrom = data.data?.from || "Unknown";
+//     console.log("📞 Incoming call detected from:", callFrom);
+
+//     if (window.softphoneManagerInstance && !window.softphoneManagerInstance.isWidgetOpen()) {
+//       window.softphoneManagerInstance.showWidget();
+//     }
+
+//     const notif = document.createElement("div");
+//     notif.className = "softphone-notification info";
+//     notif.textContent = `📞 Incoming call from ${callFrom}`;
+//     document.body.appendChild(notif);
+//     setTimeout(() => notif.remove(), 5000);
+//   }
+
+//   // 💾 Save credentials to Chrome extension storage
+//   else if (data.type === "SOFTPHONE_SAVE_CREDENTIALS") {
+//     chrome.storage.local.set({
+//       softphoneCredentials: data.credentials
+//     }, () => {
+//       console.log("📦 Credentials synced to Chrome storage");
+//     });
+//   }
+
+//   // 📤 Send back credentials to iframe (softphone app)
+//   else if (data.type === "SOFTPHONE_REQUEST_CREDENTIALS") {
+//     chrome.storage.local.get(["softphoneCredentials"], (result) => {
+//       event.source.postMessage({
+//         type: "SOFTPHONE_RESPONSE_CREDENTIALS",
+//         credentials: result.softphoneCredentials || null
+//       }, event.origin); // ✅ dynamically send back to the sender
+//     });
+//   }
+// });
+
+
 window.addEventListener("message", (event) => {
   if (event.origin !== "https://login-softphone.vercel.app") return;
 
-  if (event.data.type === "SOFTPHONE_SAVE_CREDENTIALS") {
-    console.log("🔐 Saving softphone credentials", event.data);
-    chrome.storage.local.set({
-      softphoneCredentials: event.data.credentials
-    }, () => {
-      console.log("🔐 Softphone credentials saved to extension storage");
-    });
-  }
+  const data = event.data;
 
-  if (event.data.type === "SOFTPHONE_INCOMING_CALL") {
-    const callFrom = event.data.data?.from || "Unknown";
+  if (data.type === "SOFTPHONE_INCOMING_CALL") {
+    const callFrom = data.data?.from || "Unknown";
     console.log("📞 Incoming call detected from:", callFrom);
-
     if (window.softphoneManagerInstance && !window.softphoneManagerInstance.isWidgetOpen()) {
       window.softphoneManagerInstance.showWidget();
     }
-
     const notif = document.createElement("div");
     notif.className = "softphone-notification info";
     notif.textContent = `📞 Incoming call from ${callFrom}`;
     document.body.appendChild(notif);
     setTimeout(() => notif.remove(), 5000);
   }
+
+  if (data.type === "SOFTPHONE_SAVE_CREDENTIALS") {
+    chrome.storage.local.set({ softphoneCredentials: data.credentials }, () => {
+      console.log("📦 Credentials synced to Chrome storage");
+    });
+  }
+
+  if (data.type === "SOFTPHONE_REQUEST_CREDENTIALS") {
+    chrome.storage.local.get(["softphoneCredentials"], (result) => {
+      event.source.postMessage({
+        type: "SOFTPHONE_RESPONSE_CREDENTIALS",
+        credentials: result.softphoneCredentials || null
+      }, event.origin);
+    });
+  }
+
+  if (event.data.type === "SOFTPHONE_LOGOUT_SYNC") {
+    chrome.storage.local.set({
+      softphoneCredentials: { loggedIn: false }
+    }, () => {
+      console.log("🧹 Logout synced to Chrome storage");
+    });
+  }
 });
+
+// ✅ DEBUG: Check current credentials stored in Chrome storage
+chrome.storage.local.get("softphoneCredentials", (result) => {
+  console.log("🧠 Current Chrome Storage Credentials:", result);
+});
+
+
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName === "local" && changes.softphoneCredentials) {
+    const newCreds = changes.softphoneCredentials.newValue;
+
+    // Detect logout
+    if (newCreds?.loggedIn === false) {
+      console.log("🔒 Detected logout from another tab — forwarding to iframe");
+
+      const iframe = document.getElementById("softphone-widget");
+      if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.postMessage(
+          { type: "SOFTPHONE_FORCE_LOGOUT" },
+          "https://login-softphone.vercel.app"
+        );
+      }
+    }
+  }
+});
+
+function pushCredsToIframe() {
+  const iframe = document.querySelector("#softphone-widget");
+  if (!iframe || !iframe.contentWindow) return;
+
+  chrome.storage.local.get(["softphoneCredentials"], (result) => {
+    const creds = result.softphoneCredentials;
+    if (creds && creds.loggedIn) {
+      console.log("📤 Auto pushing credentials to iframe (first load)");
+      iframe.contentWindow.postMessage({
+        type: "SOFTPHONE_RESPONSE_CREDENTIALS",
+        credentials: creds
+      }, "https://login-softphone.vercel.app");
+    }
+  });
+}
+
+// Delay to wait for iframe to mount, then push credentials
+const waitForIframe = () => {
+  const interval = setInterval(() => {
+    const iframe = document.querySelector("#softphone-widget");
+    if (iframe && iframe.contentWindow) {
+      iframe.addEventListener("load", () => setTimeout(pushCredsToIframe, 200));
+      clearInterval(interval);
+    }
+  }, 200);
+};
+
+waitForIframe();
+
+
 
 // Initialize the softphone manager when DOM is ready
 if (document.readyState === 'loading') {
