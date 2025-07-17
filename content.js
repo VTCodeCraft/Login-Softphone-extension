@@ -196,43 +196,59 @@ class SoftphoneManager {
     }
   }
 
-  // NEW METHOD: Show widget
+  // Show widget
   showWidget(phoneNumber = '') {
-    if (!this.widget) {
-      console.error('Widget not initialized');
-      return;
-    }
+  if (!this.widget) {
+    console.error('Widget not initialized');
+    return;
+  }
 
-    const position = this.calculateWidgetPosition();
-    Object.keys(position).forEach(key => {
-      this.widget.style[key] = position[key];
-    });
+  const position = this.calculateWidgetPosition();
+  Object.keys(position).forEach(key => {
+    this.widget.style[key] = position[key];
+  });
 
-    this.widget.style.display = 'block';
-    this.isWidgetVisible = true;
+  this.widget.style.display = 'block';
+  this.isWidgetVisible = true;
 
-    // Set up outside click handler
-    if (!this.outsideClickHandlerBound) {
-      this.outsideClickHandlerBound = this.handleOutsideClick.bind(this);
-      setTimeout(() => {
-        document.addEventListener('click', this.outsideClickHandlerBound);
-      }, 0);
-    }
+  if (!this.outsideClickHandlerBound) {
+    this.outsideClickHandlerBound = this.handleOutsideClick.bind(this);
+    setTimeout(() => {
+      document.addEventListener('click', this.outsideClickHandlerBound);
+    }, 0);
+  }
 
-    // If phone number provided, initiate call
-    if (phoneNumber) {
-      const iframe = this.widget.querySelector('iframe');
-      if (iframe && iframe.contentWindow) {
+  const iframe = this.widget.querySelector('iframe');
+
+  if (phoneNumber && iframe) {
+    // Always attach onload before sending
+    iframe.onload = () => {
+      console.log('✅ iframe loaded. Sending call...');
+      iframe.contentWindow.postMessage(
+        { type: 'SOFTPHONE_CALL', number: phoneNumber },
+        'https://login-softphone.vercel.app'
+      );
+    };
+
+    // In case iframe is already loaded (some browsers cache)
+    setTimeout(() => {
+      try {
         iframe.contentWindow.postMessage(
           { type: 'SOFTPHONE_CALL', number: phoneNumber },
           'https://login-softphone.vercel.app'
         );
+        console.log('📨 Sent call message to iframe:', phoneNumber);
+      } catch (e) {
+        console.warn('⚠️ Could not send message, iframe not ready');
       }
-      this.showNotification(`Calling ${phoneNumber}...`, 'success');
-    }
+    }, 1000);
 
-    console.log('👁️ Softphone widget shown');
+    this.showNotification(`📞 Calling ${phoneNumber}...`, 'success');
   }
+
+  console.log('👁️ Softphone widget shown');
+}
+
 
   // NEW METHOD: Hide widget
   hideWidget() {
