@@ -18,7 +18,7 @@
     }
   ],
   "action": {
-    "default_title": "Click-to-Call Softphone"
+    "default_title": "IVR Solutions Webrtc Softphone"
   },
   "web_accessible_resources": [
     {
@@ -37,6 +37,6 @@
     "tabs"
   ],
   "host_permissions": [
-    "https://founderscartin.s3.ap-south-1.amazonaws.com/app/ivrsolutions/webrtc/chrome-ext/index.html"
+    "https://founderscartin.s3.ap-south-1.amazonaws.com/app/ivrsolutions/webrtc/chrome-ext/index.html/*"
   ]
 }

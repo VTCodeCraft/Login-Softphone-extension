@@ -93,7 +93,7 @@ class SoftphoneManager {
       const iframe = document.createElement('iframe');
       iframe.id = 'softphone-widget';
       iframe.className = 'softphone-frame';
-      iframe.src = 'https://founderscartin.s3.ap-south-1.amazonaws.com/app/ivrsolutions/webrtc/chrome-ext/index.html';
+      iframe.src = 'https://founderscartin.s3.ap-south-1.amazonaws.com/app/ivrsolutions/webrtc/chrome-ext/index.html';  // Your hosted link
       iframe.allow = 'microphone';
       iframe.title = 'Softphone Widget';
 
@@ -107,7 +107,7 @@ class SoftphoneManager {
             iframe.contentWindow.postMessage({
               type: "SOFTPHONE_AUTOLOGIN",
               credentials: result.softphoneCredentials
-            }, "https://founderscartin.s3.ap-south-1.amazonaws.com/app/ivrsolutions/webrtc/chrome-ext/index.html");
+            }, "https://founderscartin.s3.ap-south-1.amazonaws.com");
           }
         });
       };
@@ -124,7 +124,6 @@ class SoftphoneManager {
       this.domCache.set('widget', widgetContainer);
 
       console.log('✅ Softphone widget initialized and ready');
-
     } catch (error) {
       console.error('❌ Error initializing softphone widget:', error);
     }
@@ -198,56 +197,56 @@ class SoftphoneManager {
 
   // Show widget
   showWidget(phoneNumber = '') {
-  if (!this.widget) {
-    console.error('Widget not initialized');
-    return;
-  }
+    if (!this.widget) {
+      console.error('Widget not initialized');
+      return;
+    }
 
-  const position = this.calculateWidgetPosition();
-  Object.keys(position).forEach(key => {
-    this.widget.style[key] = position[key];
-  });
+    const position = this.calculateWidgetPosition();
+    Object.keys(position).forEach(key => {
+      this.widget.style[key] = position[key];
+    });
 
-  this.widget.style.display = 'block';
-  this.isWidgetVisible = true;
+    this.widget.style.display = 'block';
+    this.isWidgetVisible = true;
 
-  if (!this.outsideClickHandlerBound) {
-    this.outsideClickHandlerBound = this.handleOutsideClick.bind(this);
-    setTimeout(() => {
-      document.addEventListener('click', this.outsideClickHandlerBound);
-    }, 0);
-  }
+    if (!this.outsideClickHandlerBound) {
+      this.outsideClickHandlerBound = this.handleOutsideClick.bind(this);
+      setTimeout(() => {
+        document.addEventListener('click', this.outsideClickHandlerBound);
+      }, 0);
+    }
 
-  const iframe = this.widget.querySelector('iframe');
+    const iframe = this.widget.querySelector('iframe');
 
-  if (phoneNumber && iframe) {
-    // Always attach onload before sending
-    iframe.onload = () => {
-      console.log('✅ iframe loaded. Sending call...');
-      iframe.contentWindow.postMessage(
-        { type: 'SOFTPHONE_CALL', number: phoneNumber },
-        'https://founderscartin.s3.ap-south-1.amazonaws.com/app/ivrsolutions/webrtc/chrome-ext/index.html'
-      );
-    };
-
-    // In case iframe is already loaded (some browsers cache)
-    setTimeout(() => {
-      try {
+    if (phoneNumber && iframe) {
+      // Always attach onload before sending
+      iframe.onload = () => {
+        console.log('✅ iframe loaded. Sending call...');
         iframe.contentWindow.postMessage(
           { type: 'SOFTPHONE_CALL', number: phoneNumber },
-          'https://founderscartin.s3.ap-south-1.amazonaws.com/app/ivrsolutions/webrtc/chrome-ext/index.html'
+          'https://founderscartin.s3.ap-south-1.amazonaws.com'
         );
-        console.log('📨 Sent call message to iframe:', phoneNumber);
-      } catch (e) {
-        console.warn('⚠️ Could not send message, iframe not ready');
-      }
-    }, 1000);
+      };
 
-    this.showNotification(`📞 Calling ${phoneNumber}...`, 'success');
+      // In case iframe is already loaded (some browsers cache)
+      setTimeout(() => {
+        try {
+          iframe.contentWindow.postMessage(
+            { type: 'SOFTPHONE_CALL', number: phoneNumber },
+            'https://founderscartin.s3.ap-south-1.amazonaws.com'
+          );
+          console.log('📨 Sent call message to iframe:', phoneNumber);
+        } catch (e) {
+          console.warn('⚠️ Could not send message, iframe not ready');
+        }
+      }, 1000);
+
+      this.showNotification(`📞 Calling ${phoneNumber}...`, 'success');
+    }
+
+    console.log('👁️ Softphone widget shown');
   }
-
-  console.log('👁️ Softphone widget shown');
-}
 
 
   // NEW METHOD: Hide widget
@@ -897,7 +896,7 @@ class SoftphoneManager {
 
 
 window.addEventListener("message", (event) => {
-  if (event.origin !== "https://founderscartin.s3.ap-south-1.amazonaws.com/app/ivrsolutions/webrtc/chrome-ext/index.html") return;
+  if (event.origin !== "https://founderscartin.s3.ap-south-1.amazonaws.com") return;
 
   const data = event.data;
 
@@ -956,7 +955,7 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
       if (iframe && iframe.contentWindow) {
         iframe.contentWindow.postMessage(
           { type: "SOFTPHONE_FORCE_LOGOUT" },
-          "https://founderscartin.s3.ap-south-1.amazonaws.com/app/ivrsolutions/webrtc/chrome-ext/index.html"
+          "https://founderscartin.s3.ap-south-1.amazonaws.com"
         );
       }
     }
@@ -974,7 +973,7 @@ function pushCredsToIframe() {
       iframe.contentWindow.postMessage({
         type: "SOFTPHONE_RESPONSE_CREDENTIALS",
         credentials: creds
-      }, "https://founderscartin.s3.ap-south-1.amazonaws.com/app/ivrsolutions/webrtc/chrome-ext/index.html");
+      }, "https://founderscartin.s3.ap-south-1.amazonaws.com");
     }
   });
 }
