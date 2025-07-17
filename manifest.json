@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Softphone",
+  "name": "IVR Solutions Webrtc Softphone",
   "version": "2.0.0",
   "description": "Professional softphone extension with click-to-call functionality, phone number detection, and call management features",
   "author": "Your Organization",
