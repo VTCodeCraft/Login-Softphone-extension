@@ -93,7 +93,7 @@ class SoftphoneManager {
       const iframe = document.createElement('iframe');
       iframe.id = 'softphone-widget';
       iframe.className = 'softphone-frame';
-      iframe.src = 'https://login-softphone.vercel.app/';
+      iframe.src = 'https://founderscartin.s3.ap-south-1.amazonaws.com/app/ivrsolutions/webrtc/chrome-ext/index.html';
       iframe.allow = 'microphone';
       iframe.title = 'Softphone Widget';
 
@@ -107,7 +107,7 @@ class SoftphoneManager {
             iframe.contentWindow.postMessage({
               type: "SOFTPHONE_AUTOLOGIN",
               credentials: result.softphoneCredentials
-            }, "https://login-softphone.vercel.app");
+            }, "https://founderscartin.s3.ap-south-1.amazonaws.com/app/ivrsolutions/webrtc/chrome-ext/index.html");
           }
         });
       };
@@ -226,7 +226,7 @@ class SoftphoneManager {
       console.log('✅ iframe loaded. Sending call...');
       iframe.contentWindow.postMessage(
         { type: 'SOFTPHONE_CALL', number: phoneNumber },
-        'https://login-softphone.vercel.app'
+        'https://founderscartin.s3.ap-south-1.amazonaws.com/app/ivrsolutions/webrtc/chrome-ext/index.html'
       );
     };
 
@@ -235,7 +235,7 @@ class SoftphoneManager {
       try {
         iframe.contentWindow.postMessage(
           { type: 'SOFTPHONE_CALL', number: phoneNumber },
-          'https://login-softphone.vercel.app'
+          'https://founderscartin.s3.ap-south-1.amazonaws.com/app/ivrsolutions/webrtc/chrome-ext/index.html'
         );
         console.log('📨 Sent call message to iframe:', phoneNumber);
       } catch (e) {
@@ -810,7 +810,7 @@ class SoftphoneManager {
 
 // Keep the existing message listeners and initialization code
 // window.addEventListener("message", (event) => {
-//   if (event.origin !== "https://login-softphone.vercel.app") return;
+//   if (event.origin !== "https://founderscartin.s3.ap-south-1.amazonaws.com/app/ivrsolutions/webrtc/chrome-ext/index.html") return;
 //   if (event.data.type === "SOFTPHONE_INCOMING_CALL") {
 //     const callFrom = event.data.data?.from || "Unknown";
 //     console.log("📞 Incoming call detected from:", callFrom);
@@ -828,7 +828,7 @@ class SoftphoneManager {
 // });
 
 // window.addEventListener("message", (event) => {
-//   if (event.origin !== "https://login-softphone.vercel.app") return;
+//   if (event.origin !== "https://founderscartin.s3.ap-south-1.amazonaws.com/app/ivrsolutions/webrtc/chrome-ext/index.html") return;
 
 //   if (event.data.type === "SOFTPHONE_SAVE_CREDENTIALS") {
 //     chrome.storage.local.set({
@@ -841,7 +841,7 @@ class SoftphoneManager {
 
 
 // window.addEventListener("message", (event) => {
-//   if (event.origin !== "https://login-softphone.vercel.app") return;
+//   if (event.origin !== "https://founderscartin.s3.ap-south-1.amazonaws.com/app/ivrsolutions/webrtc/chrome-ext/index.html") return;
 
 //   if (event.data.type === "SOFTPHONE_REQUEST_CREDENTIALS") {
 //     chrome.storage.local.get(["softphoneCredentials"], (result) => {
@@ -855,7 +855,7 @@ class SoftphoneManager {
 
 // window.addEventListener("message", (event) => {
 //   // ✅ Only allow messages from the trusted softphone app
-//   if (event.origin !== "https://login-softphone.vercel.app") return;
+//   if (event.origin !== "https://founderscartin.s3.ap-south-1.amazonaws.com/app/ivrsolutions/webrtc/chrome-ext/index.html") return;
 
 //   const data = event.data;
 
@@ -897,7 +897,7 @@ class SoftphoneManager {
 
 
 window.addEventListener("message", (event) => {
-  if (event.origin !== "https://login-softphone.vercel.app") return;
+  if (event.origin !== "https://founderscartin.s3.ap-south-1.amazonaws.com/app/ivrsolutions/webrtc/chrome-ext/index.html") return;
 
   const data = event.data;
 
@@ -956,7 +956,7 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
       if (iframe && iframe.contentWindow) {
         iframe.contentWindow.postMessage(
           { type: "SOFTPHONE_FORCE_LOGOUT" },
-          "https://login-softphone.vercel.app"
+          "https://founderscartin.s3.ap-south-1.amazonaws.com/app/ivrsolutions/webrtc/chrome-ext/index.html"
         );
       }
     }
@@ -974,7 +974,7 @@ function pushCredsToIframe() {
       iframe.contentWindow.postMessage({
         type: "SOFTPHONE_RESPONSE_CREDENTIALS",
         credentials: creds
-      }, "https://login-softphone.vercel.app");
+      }, "https://founderscartin.s3.ap-south-1.amazonaws.com/app/ivrsolutions/webrtc/chrome-ext/index.html");
     }
   });
 }
